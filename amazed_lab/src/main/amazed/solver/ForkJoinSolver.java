@@ -23,6 +23,8 @@ public class ForkJoinSolver
 
     //static ConcurrentSkipListSet<Integer> visited = new ConcurrentSkipListSet<>();
     //static ConcurrentHashMap<Integer, Integer> predecessor = new ConcurrentHashMap<>();
+
+    // found is a shared variable for all instances to signal that a goal has been found
     static boolean found = false;
     static int forkAfter;
     private int begin;
@@ -83,26 +85,24 @@ public class ForkJoinSolver
     }
 
     private List<Integer> parallelSearch()
-    {
-        List<ForkJoinSolver> nrOfChilds = new ArrayList<>();
-        Stack<Integer> grannar = new Stack<>();
+    {   
+        List<ForkJoinSolver> nrOfChilds = new ArrayList<>(); // List of children
+        Stack<Integer> grannar = new Stack<>();              // Stack of adj nodes
         int steps = 0;
 
         int player = maze.newPlayer(start);
         int currNode = start;
         grannar.push(currNode);
 
-
-
-
         while(!grannar.isEmpty())
         {
-            if (found) return null;
+            if (found) return null;     // If a goal has been found, terminate        
 
             currNode = grannar.pop();
 
             if(maze.hasGoal(currNode))
             {   maze.move(player, currNode);
+                found = true;                      // Signal that goal has been found
                 return fullPath(pathFromTo(start, currNode), currNode);
             }
 
@@ -115,7 +115,8 @@ public class ForkJoinSolver
                     if (!visited.contains(nb))
                     {
                         predecessor.put(nb, currNode);
-                        if (steps % forkAfter == 0 && amountAvailNeigh(maze.neighbors(currNode)) > 1)
+                        // Only fork if we have more than 1 available neighbors
+                        if (steps % forkAfter == 0 && amountAvailNeigh(maze.neighbors(currNode)) > 1) 
                         {
                             ForkJoinSolver child = new ForkJoinSolver(maze, visited, predecessor, nb);
                             nrOfChilds.add(child);
@@ -137,9 +138,9 @@ public class ForkJoinSolver
                 return result;
             }
         }
-
         return null;
     }
+
     private int amountAvailNeigh(Set<Integer> neigh){
         int amount = 0;
         for (int neighbor : neigh){
@@ -151,14 +152,15 @@ public class ForkJoinSolver
     private List<Integer> fullPath(List<Integer> childPath, int startNode){
         List<Integer> path = new ArrayList<>();
         int currNode = startNode;
+
         while(currNode != maze.start())
         {
             path.add(currNode);
             currNode = predecessor.get(currNode);
         }
+
         path.add(maze.start());
         Collections.reverse(path);
         return path;
-
     }
 }
